@@ -1,96 +1,58 @@
 /*
- * Exercício 3 - Contador de Linhas com Loop
+ * Exercício 2 - Leitura Básica de Arquivo
  * 
- * OBJETIVO: Implementar loop de leitura e analisar múltiplas syscalls
+ * OBJETIVO: Implementar leitura de arquivo usando syscalls
  * 
- * TAREFA: Complete os TODOs para implementar o loop
- * 1. Compile: gcc src/ex3_contador.c -o ex3_contador
- * 2. Execute: ./ex3_contador
- * 3. Analise: strace -c ./ex3_contador
- * 4. Observe: strace -e read ./ex3_contador
+ * 1. Compile:  gcc src/ex2_leitura.c -Wall -g -o ex2_leitura
+ * 2. Execute:  ./ex2_leitura
+ * 3. Observe:  strace -e openat,read,close ./ex2_leitura
  */
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <time.h>
+#include <fcntl.h>    // open(), flags O_*
+#include <unistd.h>   // read(), close()
+#include <stdio.h>    // printf(), perror()
+#include <errno.h>    // errno
 
-#define BUFFER_SIZE 64   // Buffer pequeno para forçar múltiplas leituras
+#define BUFFER_SIZE 128
 
-int main() {
+int main(void) {
     char buffer[BUFFER_SIZE];
     ssize_t bytes_lidos;
     int fd;
-    int total_linhas = 0;
-    int total_caracteres = 0;
-    int total_reads = 0;
     
-    clock_t inicio = clock();
+    printf("=== Exercício 2: Leitura de Arquivo ===\n\n");
     
-    printf("=== Exercício 3: Contador de Linhas ===\n");
-    printf("Buffer: %d bytes\n\n", BUFFER_SIZE);
-    
-    fd = open("dados/teste2.txt", O_RDONLY);
+    // Abrir arquivo para leitura
+    fd = open("dados/teste1.txt", O_RDONLY);
     if (fd < 0) {
-        perror("Erro ao abrir dados/teste2.txt");
+        perror("Erro ao abrir arquivo");
         return 1;
     }
     
-    /*
-     * TODO 1: Implementar loop de leitura
-     * Loop até read() retornar 0 (fim do arquivo)
-     */
-    while (/* TODO: condição do loop */) {
-        total_reads++;
-        
-        /*
-         * TODO 2: Contar caracteres '\n' no buffer
-         */
-        for (int i = 0; i < bytes_lidos; i++) {
-            /* TODO: verificar '\n' e incrementar total_linhas */
-        }
-        
-        /*
-         * TODO 3: Somar total de caracteres
-         */
-        /* TODO: total_caracteres += ... */;
-        
-        if (total_reads % 10 == 0) {
-            printf("Processadas %d chamadas read()...\n", total_reads);
-        }
-    }
+    printf("Arquivo aberto! File descriptor: %d\n", fd);
     
-    /*
-     * TODO 4: Verificar se houve erro na leitura
-     */
-    if (/* TODO: condição de erro */) {
+    // Ler até BUFFER_SIZE - 1 para sobrar 1 byte pro terminador
+    bytes_lidos = read(fd, buffer, BUFFER_SIZE - 1);
+    if (bytes_lidos < 0) {
         perror("Erro na leitura");
         close(fd);
         return 1;
     }
     
-    close(fd);
+    // Terminador nulo para tratar como string
+    buffer[bytes_lidos] = '\0';
     
-    clock_t fim = clock();
-    double tempo = ((double)(fim - inicio)) / CLOCKS_PER_SEC;
+    // Exibir resultados
+    printf("Bytes lidos: %zd\n", bytes_lidos);
+    printf("Conteúdo:\n%s\n", buffer);
     
-    printf("\n=== Resultados ===\n");
-    printf("Linhas: %d\n", total_linhas);
-    printf("Caracteres: %d\n", total_caracteres);
-    printf("Chamadas read(): %d\n", total_reads);
-    printf("Tempo: %.6f segundos\n", tempo);
-    
-    if (total_reads > 0) {
-        printf("Média bytes/read: %.1f\n", 
-               (double)total_caracteres / total_reads);
+    // Fechar o arquivo
+    if (close(fd) < 0) {
+        perror("Erro ao fechar arquivo");
+        return 1;
     }
     
-    printf("\nExecute: strace -c ./ex3_contador\n");
-    
+    printf("Arquivo fechado!\n\n");
+    printf("Execute: strace -e openat,read,close ./ex2_leitura\n");
     return 0;
 }
-
-/*
- * Experimente mudar BUFFER_SIZE para 16, 256, 1024
- * e compare o número de syscalls vs tempo de execução
- */
